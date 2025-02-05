@@ -153,31 +153,21 @@ def create_level_data(level):
     if level == 0:  # Fase de tutorial
         # Uma grande plataforma ocupando o "chão" (y=550, 800 de largura)
         level_platforms = [
-            (0, 550, 800, 50),  # x=0, y=550, w=800, h=50
+            (0, 550, 800, 50),
         ]
-        # Jogadores começam no canto esquerdo
         start_pos1 = (50, 450)
         start_pos2 = (120, 450)
-
-        # Um inimigo parado no final (x=700, y=510, range = 700..700, speed=0)
-        # Se seu código usa: (x, y, min_val, max_val, speed)
-        # ou algo do tipo. A ideia é "parado" => min_val == max_val, speed=0
         inimigos_data = [
-            (700, 510, 700, 700, 0),  # pos final da plataforma
+            (700, 510, 700, 700, 0),
         ]
-
-        # Nenhuma Olivia nessa fase
         olivia_data = None
 
     elif level == 1:
-        # Plataforma grande no chão
         level_platforms = [
             (0, 550, 800, 50),
         ]
-        # Jogadores começam afastados
         start_pos1 = (50, 450)
         start_pos2 = (120, 450)
-        # Inimigos: (x, y=510, range x=50..750)
         inimigos_data = [
             (300, 510, 50, 750, 2),
             (500, 510, 50, 750, 3),
@@ -227,10 +217,10 @@ def create_level_data(level):
             (430, 310, 400, 510, 0),
             (630, 210, 600, 710, 0),
         ]
-        # Olivia no topo da última plataforma
         olivia_data = (700, 150)
 
     return (level_platforms, start_pos1, start_pos2, inimigos_data, olivia_data)
+
 
 # -----------------------
 # LOOP PRINCIPAL (MAIN)
@@ -250,43 +240,40 @@ def main():
     enemy_image  = load_image("assets/weight.png", ENEMY_WIDTH, ENEMY_HEIGHT)
     ground_image = load_image("assets/ground.png", 50, 50, alpha=False)
     olivia_image = load_image("assets/olivia.png", 80, 120)
+    bg_final1 = load_image("assets/final1.png", WIDTH, HEIGHT)
+    bg_final2 = load_image("assets/final2.png", WIDTH, HEIGHT)
 
-    # Seta para clicar e avançar a tela final
-    arrow_image  = load_image("assets/arrow.png", 60, 60)  # fallback se não existir
-    # Retângulo de clique da seta (canto inferior direito)
+    # NOVO: background da história
+    story_bg = load_image("assets/story_bg.png", WIDTH, HEIGHT)
+
+    arrow_image  = load_image("assets/arrow.png", 60, 60)
     arrow_rect = pygame.Rect(WIDTH - 70, HEIGHT - 70, 60, 60)
 
-    # FONTES
     font_title = pygame.font.SysFont("Arial", 60, bold=True)
     font_menu  = pygame.font.SysFont("Arial", 50, bold=True)
     font_small = pygame.font.SysFont("Arial", 30)
 
-    # Teclas de cada player
     player1_keys = {'left': pygame.K_a, 'right': pygame.K_d, 'jump': pygame.K_w}
     player2_keys = {'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'jump': pygame.K_UP}
 
-    # Estados do jogo
+    # Estados do jogo (ADICIONAMOS "STORY")
     game_state = "MENU"
     current_level = 0
     max_levels = 5
 
-    # Opções de menu simples
     menu_options = ["Iniciar", "Sair"]
     selected_option = 0
 
-    # Variáveis para controlar a Olivia e a vitória
     p1_touched_olivia = False
     p2_touched_olivia = False
     olivia_sprite = None
 
-    # Mensagens finais (2 páginas)
     final_messages = [
         "Parabéns por salvar a Olivia! Vocês foram incríveis!",
         "Quer namorar comigo?"
     ]
-    final_page = 0  # 0 => primeira tela, 1 => segunda tela
+    final_page = 0
 
-    # GRUPOS de sprites
     platforms = pygame.sprite.Group()
     enemies   = pygame.sprite.Group()
     all_sprites = pygame.sprite.Group()
@@ -295,13 +282,8 @@ def main():
     player2 = None
     level_end_x = 750
 
-    # -----------------------
-    # FUNÇÃO para iniciar (ou reiniciar) a fase
-    # -----------------------
     def start_level(level):
         nonlocal p1_touched_olivia, p2_touched_olivia, olivia_sprite
-
-        # Reseta flags de Olivia
         p1_touched_olivia = False
         p2_touched_olivia = False
         olivia_sprite = None
@@ -313,41 +295,32 @@ def main():
         enemies.empty()
         all_sprites.empty()
 
-        # Cria plataformas
         for (px, py, w, h) in plats_data:
             pf = Platform(px, py, w, h, ground_image)
             platforms.add(pf)
             all_sprites.add(pf)
 
-        # Cria inimigos
         for (ex, ey, minv, maxv, spd) in enem_data:
             e = Enemy(ex, ey, enemy_image, minv, maxv, spd)
             enemies.add(e)
             all_sprites.add(e)
 
-        # Cria jogadores
         pl1 = Player(sp1[0], sp1[1], p1_image, player1_keys)
         pl2 = Player(sp2[0], sp2[1], p2_image, player2_keys)
         all_sprites.add(pl1, pl2)
 
-        # Se tiver Olivia
         if oli_data is not None:
             ox, oy = oli_data
             oli = Olivia(ox, oy, olivia_image)
             all_sprites.add(oli)
             olivia_sprite = oli
 
-        # Determina x final (para passar de fase) se não for a ultima
         end_x = 750 if level < max_levels else 9999
         return pl1, pl2, end_x
-
-    # Inicia a fase 1
-    player1, player2, level_end_x = start_level(current_level)
 
     while True:
         clock.tick(FPS)
 
-        # EVENTOS
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -362,12 +335,19 @@ def main():
                         selected_option = (selected_option + 1) % len(menu_options)
                     elif event.key in [pygame.K_RETURN, pygame.K_KP_ENTER]:
                         if selected_option == 0:  # Iniciar
-                            current_level = 0
-                            player1, player2, level_end_x = start_level(current_level)
-                            game_state = "PLAY"
+                            # Agora, antes de jogar, vamos pra "STORY"
+                            game_state = "STORY"
                         else:  # Sair
                             pygame.quit()
                             sys.exit()
+
+            elif game_state == "STORY":
+                # Se apertar ENTER, começamos a fase 0
+                if event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE]:
+                        current_level = 0
+                        player1, player2, level_end_x = start_level(current_level)
+                        game_state = "PLAY"
 
             elif game_state == "PLAY":
                 if event.type == pygame.KEYDOWN:
@@ -383,64 +363,47 @@ def main():
                     game_state = "PLAY"
 
             elif game_state == "WIN":
-                # Duas telas de mensagem final
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mx, my = event.pos
-                    # Se estiver na primeira página => mostra seta => clique avança
                     if final_page < len(final_messages) - 1:
-                        # Verifica clique na seta
                         if arrow_rect.collidepoint(mx, my):
                             final_page += 1
-                # Se quiser sair ao apertar ESC, por ex.
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        # Volta ao MENU
                         game_state = "MENU"
                         final_page = 0
 
-        # LÓGICA DO JOGO
         if game_state == "PLAY":
             player1.handle_input()
             player2.handle_input()
 
-            all_sprites.update(platforms)  # chama update() em Player e Platform
-            enemies.update()              # update() dos inimigos
+            all_sprites.update(platforms)
+            enemies.update()
 
-            # Colisão com inimigos => GAME_OVER
-            if pygame.sprite.spritecollide(player1, enemies, False) or pygame.sprite.spritecollide(player2, enemies, False):
+            if pygame.sprite.spritecollide(player1, enemies, False) or \
+               pygame.sprite.spritecollide(player2, enemies, False):
                 game_state = "GAME_OVER"
 
-            # Cair da tela => GAME_OVER
             if player1.rect.top > HEIGHT or player2.rect.top > HEIGHT:
                 game_state = "GAME_OVER"
 
-            # Se não for fase final, passamos se x >= level_end_x
             if current_level < 4:
                 if (player1.rect.x >= level_end_x) and (player2.rect.x >= level_end_x):
                     current_level += 1
                     player1, player2, level_end_x = start_level(current_level)
             else:
-                # Fase 4 => checar Olivia
                 if olivia_sprite:
                     if olivia_sprite.rect.colliderect(player1.rect):
                         p1_touched_olivia = True
                     if olivia_sprite.rect.colliderect(player2.rect):
                         p2_touched_olivia = True
                     if p1_touched_olivia and p2_touched_olivia:
-                        # Vitória total => exibir mensagem final
                         game_state = "WIN"
-                        final_page = 0  # começa na primeira tela final
+                        final_page = 0
 
         # DESENHO
-        if game_state == 'MENU':
-            screen.blit(bg_menu, (0,0))
-        else:
-
-            screen.blit(bg_image, (0, 0))
-
-
         if game_state == "MENU":
-            # Desenha título e opções
+            screen.blit(bg_menu, (0,0))
             title_surf = font_title.render("", True, BLACK)
             title_rect = title_surf.get_rect(center=(WIDTH//2, 120))
             screen.blit(title_surf, title_rect)
@@ -451,34 +414,33 @@ def main():
                 rect_opt = surf_opt.get_rect(center=(WIDTH//2, 300 + i*60))
                 screen.blit(surf_opt, rect_opt)
 
+        elif game_state == "STORY":
+            # Exibe o background de história
+            screen.blit(story_bg, (0,0))
+            # Se quiser, desenhe algo como "Press ENTER to continue"
+            press_surf = font_small.render("", True, RED)
+            press_rect = press_surf.get_rect(center=(WIDTH//2, HEIGHT - 50))
+            screen.blit(press_surf, press_rect)
+
         elif game_state == "PLAY":
-            # Desenha todo o grupo
+            screen.blit(bg_image, (0, 0))
             all_sprites.draw(screen)
             enemies.draw(screen)
 
         elif game_state == "GAME_OVER":
-            font_small = pygame.font.SysFont("Arial", 30)
-            msg = font_small.render("GAME OVER! Aperte R para reiniciar.", True, BLACK)
-            rect_msg = msg.get_rect(center=(WIDTH//2, HEIGHT//2))
             screen.blit(game_over_bg, (0, 0))
-
-            
+            font_small2 = pygame.font.SysFont("Arial", 30)
+            msg = font_small2.render("", True, BLACK)
+            rect_msg = msg.get_rect(center=(WIDTH//2, HEIGHT//2))
+            screen.blit(msg, rect_msg)
 
         elif game_state == "WIN":
-            # Temos 2 páginas
-            # Exibe o texto de final_messages[final_page]
-            text_surf = font_menu.render(final_messages[final_page], True, BLACK)
-            text_rect = text_surf.get_rect(center=(WIDTH//2, HEIGHT//2))
-            screen.blit(text_surf, text_rect)
-
-            # Se ainda não estivermos na última página, desenha a seta
+            if final_page == 0:
+                screen.blit(bg_final1, (0, 0))
+            else:
+                screen.blit(bg_final2, (0, 0))
             if final_page < len(final_messages) - 1:
-                # desenha a imagem da seta no canto
                 screen.blit(arrow_image, arrow_rect)
-
-            # Dica: "Press ESC para voltar ao menu"
-            esc_surf = font_small.render("(Aperte ESC para voltar ao menu)", True, RED)
-            screen.blit(esc_surf, (WIDTH//2 - 150, HEIGHT - 40))
 
         pygame.display.flip()
 
